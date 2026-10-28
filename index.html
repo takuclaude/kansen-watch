@@ -25,7 +25,7 @@
   .card h2 { margin: 0 0 12px; font-size: 1.05rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
   .period { color: var(--muted); font-size: .85rem; font-weight: 400; }
   table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; color: var(--muted); font-size: .8rem; font-weight: 600; padding: 6px 0; border-bottom: 2px solid var(--line); }
+  th { text-align: left; line-height: 1.4; vertical-align: bottom; color: var(--muted); font-size: .8rem; font-weight: 600; padding: 6px 0; border-bottom: 2px solid var(--line); }
   td { padding: 12px 0; border-bottom: 1px solid var(--line); }
   tr:last-child td { border-bottom: 0; }
   .num { text-align: right; }
@@ -43,18 +43,18 @@
 <div class="wrap">
   <header>
     <h1>感染症ウォッチ</h1>
-    <p>定点当たり報告数（1医療機関あたりの1週間の患者数）。前週比は前の週との差で、増加は赤・減少は緑。</p>
+    <p>患者数は、指定された医療機関1か所あたりの1週間の患者数（定点当たり報告数）。前週比は前の週との差で、増加は赤・減少は緑。</p>
   </header>
 
   <section class="card">
     <h2>全国 <span class="period" id="nat-period"></span></h2>
-    <table><thead><tr><th>疾患</th><th class="num">前週比</th><th class="num">定点当たり</th></tr></thead>
+    <table><thead><tr><th>疾患</th><th class="num">前週比</th><th class="num">患者数<br>（1医療機関あたり/週）</th></tr></thead>
       <tbody id="nat-rows"><tr><td colspan="3" class="msg">読み込み中…</td></tr></tbody></table>
   </section>
 
   <section class="card">
     <h2>人吉・球磨 <span class="period" id="hk-period"></span></h2>
-    <table><thead><tr><th>疾患</th><th class="num">前週比</th><th class="num">定点当たり</th></tr></thead>
+    <table><thead><tr><th>疾患</th><th class="num">前週比</th><th class="num">患者数<br>（1医療機関あたり/週）</th></tr></thead>
       <tbody id="hk-rows"><tr><td colspan="3" class="msg">読み込み中…</td></tr></tbody></table>
   </section>
 
@@ -92,11 +92,11 @@
       chg.className = 'num chg';
       if (r.change !== null) {
         chg.className += r.change > 0 ? ' up' : r.change < 0 ? ' down' : '';
-        chg.textContent = r.change > 0 ? '▲' + fmt(r.change) : r.change < 0 ? '▼' + fmt(-r.change) : '±0';
+        chg.textContent = r.change > 0 ? '▲' + fmt(r.change) + '人' : r.change < 0 ? '▼' + fmt(-r.change) + '人' : '±0';
       }
       const val = document.createElement('td');
       val.className = 'num val';
-      val.textContent = fmt(r.value);
+      val.textContent = fmt(r.value) + '人';
       tr.append(name, chg, val);
       return tr;
     }));
