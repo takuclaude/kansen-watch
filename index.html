@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>感染症ウォッチ</title>
+<style>
+  :root {
+    --bg: #f3f4f2; --panel: #ffffff; --fg: #1f2421; --muted: #6b716d; --line: #e3e6e3;
+    --accent: #2f7d76; --tag-bg: #eef0ee; --kid-bg: #fdf0e6; --kid-fg: #b4560f;
+    --up: #c0392b; --down: #2e7d4f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161a18; --panel: #1f2421; --fg: #eef1ef; --muted: #9aa29d; --line: #333a36;
+      --accent: #5fb3aa; --tag-bg: #2c3330; --kid-bg: #3a2a1e; --kid-fg: #f0a868; --up: #ff7b6b; --down: #6fcf97; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+    font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 44rem; margin: 0 auto; padding: 20px 16px 40px; display: grid; gap: 16px; }
+  header h1 { margin: 0; font-size: 1.5rem; }
+  header p { margin: 6px 0 0; color: var(--muted); font-size: .82rem; line-height: 1.6; }
+  .card { background: var(--panel); border-radius: 18px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+  .card h2 { margin: 0 0 12px; font-size: 1.05rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+  .period { color: var(--muted); font-size: .85rem; font-weight: 400; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; color: var(--muted); font-size: .8rem; font-weight: 600; padding: 6px 0; border-bottom: 2px solid var(--line); }
+  td { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  tr:last-child td { border-bottom: 0; }
+  .num { text-align: right; }
+  .val { font-weight: 700; font-size: 1.15rem; }
+  .tag { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 6px; font-size: .75rem;
+    background: var(--tag-bg); color: var(--muted); white-space: nowrap; vertical-align: 1px; }
+  .tag.kid { background: var(--kid-bg); color: var(--kid-fg); }
+  .chg { font-size: .8rem; color: var(--muted); white-space: nowrap; padding-right: 12px; }
+  .chg.up { color: var(--up); } .chg.down { color: var(--down); }
+  .msg { color: var(--muted); font-size: .85rem; padding: 12px 0; }
+  footer { color: var(--muted); font-size: .75rem; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>感染症ウォッチ</h1>
+    <p>定点当たり報告数（1医療機関あたりの1週間の患者数）。前週比は前の週との差で、増加は赤・減少は緑。</p>
+  </header>
+
+  <section class="card">
+    <h2>全国 <span class="period" id="nat-period"></span></h2>
+    <table><thead><tr><th>疾患</th><th class="num">前週比</th><th class="num">定点当たり</th></tr></thead>
+      <tbody id="nat-rows"><tr><td colspan="3" class="msg">読み込み中…</td></tr></tbody></table>
+  </section>
+
+  <section class="card">
+    <h2>人吉・球磨 <span class="period" id="hk-period"></span></h2>
+    <table><thead><tr><th>疾患</th><th class="num">前週比</th><th class="num">定点当たり</th></tr></thead>
+      <tbody id="hk-rows"><tr><td colspan="3" class="msg">読み込み中…</td></tr></tbody></table>
+  </section>
+
+  <footer>
+    出典：全国は国立健康危機管理研究機構（JIHS）の感染症発生動向調査、人吉・球磨は熊本県感染症情報（保健所別）。<br>
+    毎週土曜の朝に最新週へ更新。<span id="updated"></span>
+  </footer>
+</div>
+
+<script>
+  const fmt = (v) => Number(v).toFixed(2);
+
+  function latest(rows) {
+    const weeks = [...new Set(rows.map((r) => r.week))].sort();
+    const prev = new Map(rows.filter((r) => r.week === weeks[weeks.length - 2]).map((r) => [r.disease, Number(r.value)]));
+    return rows.filter((r) => r.week === weeks[weeks.length - 1]).map((r) => {
+      const v = Number(r.value), p = prev.get(r.disease);
+      return { ...r, value: v, change: p === undefined ? null : Math.round((v - p) * 100) / 100 };
+    });
+  }
+
+  function render(rows, bodyId, periodId) {
+    const body = document.getElementById(bodyId);
+    const cur = latest(rows);
+    document.getElementById(periodId).textContent = cur.length ? cur[0].period : '';
+    body.replaceChildren(...cur.map((r) => {
+      const tr = document.createElement('tr');
+      const name = document.createElement('td');
+      name.append(r.disease);
+      const tag = document.createElement('span');
+      tag.className = 'tag' + (r.age === '子ども' ? ' kid' : '');
+      tag.textContent = r.age;
+      name.append(tag);
+      const chg = document.createElement('td');
+      chg.className = 'num chg';
+      if (r.change !== null) {
+        chg.className += r.change > 0 ? ' up' : r.change < 0 ? ' down' : '';
+        chg.textContent = r.change > 0 ? '▲' + fmt(r.change) : r.change < 0 ? '▼' + fmt(-r.change) : '±0';
+      }
+      const val = document.createElement('td');
+      val.className = 'num val';
+      val.textContent = fmt(r.value);
+      tr.append(name, chg, val);
+      return tr;
+    }));
+  }
+
+  async function load(file, bodyId, periodId) {
+    try {
+      const res = await fetch(file + '?t=' + Date.now());
+      if (!res.ok) throw new Error(res.status);
+      render(await res.json(), bodyId, periodId);
+    } catch (e) {
+      document.getElementById(bodyId).innerHTML = '<tr><td colspan="3" class="msg">データを読み込めませんでした。時間をおいて再読み込みしてください。</td></tr>';
+    }
+  }
+
+  load('data/national.json', 'nat-rows', 'nat-period');
+  load('data/hitoyoshi-kuma.json', 'hk-rows', 'hk-period');
+  fetch('data/updated.txt?t=' + Date.now()).then((r) => r.ok ? r.text() : '').then((t) => {
+    if (t.trim()) document.getElementById('updated').textContent = '（最終更新：' + t.trim() + '）';
+  }).catch(() => {});
+</script>
+</body>
+</html>
